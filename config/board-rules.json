@@ -1,0 +1,47 @@
+{
+  "canvas": {
+    "width": 950,
+    "background": "#000000",
+    "padding": 25
+  },
+  "spacing": {
+    "imageGap": 20,
+    "sectionGap": 50
+  },
+  "image": {
+    "maxWidth": 300,
+    "maxRowHeight": 420,
+    "minRowFillRatio": 0.85,
+    "classification": {
+      "mobilePortraitMaxAspect": 0.65,
+      "wideBannerMinAspect": 2.5
+    },
+    "smallImageSet": {
+      "maxWidthMin": 280,
+      "maxWidthMax": 300
+    }
+  },
+  "flowBoard": {
+    "background": "#323232",
+    "padding": 25,
+    "autoWrapOnDarkImage": true,
+    "darkDetection": {
+      "luminanceThreshold": 30,
+      "edgeRatioThreshold": 0.7,
+      "sampleStripPx": 4
+    }
+  },
+  "sectionTitle": {
+    "color": "#9B9B9B",
+    "fontSize": 22,
+    "fontWeight": 600,
+    "fontFamily": "-apple-system, \"SF Pro\", \"Pretendard\", \"Apple SD Gothic Neo\", \"Malgun Gothic\", sans-serif",
+    "lineHeight": 32,
+    "bottomGap": 18
+  },
+  "gif": {
+    "fps": 15,
+    "quality": 10,
+    "maxDurationMs": 8000
+  }
+}

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weekly Report Board</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <div class="col-left">
+    <div class="col-header">
+      <div class="brand">
+        <h1>Weekly Report Board</h1>
+        <div class="sub" id="brandSub">950px · PNG / GIF · created by 0heee</div>
+      </div>
+    </div>
+    <div class="col-scroll">
+      <div class="meta-card">
+        <div class="meta-group">
+          <label>연도</label>
+          <div class="meta-combo" data-field="year">
+            <input id="year" class="meta-combo-input" type="text" inputmode="numeric" autocomplete="off" />
+            <button type="button" class="meta-combo-toggle" aria-label="연도 선택" aria-haspopup="listbox">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="5 6 8 3 11 6"/>
+                <polyline points="5 10 8 13 11 10"/>
+              </svg>
+            </button>
+            <div class="meta-combo-menu" role="listbox"></div>
+          </div>
+        </div>
+        <div class="meta-divider"></div>
+        <div class="meta-group">
+          <label>주차</label>
+          <div class="meta-combo" data-field="week">
+            <input id="week" class="meta-combo-input" type="text" inputmode="numeric" autocomplete="off" />
+            <button type="button" class="meta-combo-toggle" aria-label="주차 선택" aria-haspopup="listbox">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="5 6 8 3 11 6"/>
+                <polyline points="5 10 8 13 11 10"/>
+              </svg>
+            </button>
+            <div class="meta-combo-menu" role="listbox"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sections" id="sections"></div>
+      <button class="add-section" id="addSection">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        새 업무 추가
+      </button>
+    </div>
+    <div class="col-left-footer">
+      <button class="fab-generate" id="generateBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z"/>
+          <path d="M19 5v2M18 6h2"/>
+          <path d="M5 18v2M4 19h2"/>
+        </svg>
+        이미지 만들기
+      </button>
+    </div>
+  </div>
+
+  <div class="col-right">
+    <div class="col-header">
+      <h2 class="col-title">생성된 이미지</h2>
+      <div class="header-status" id="statusBar">
+        <span class="status" id="status"></span>
+        <div class="progress" id="progressWrap"><div class="bar" id="progressBar"></div></div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" id="downloadAllBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          모두 다운로드
+        </button>
+      </div>
+    </div>
+    <div class="col-scroll">
+      <div class="preview-wrap">
+        <div class="results-list" id="resultsList">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+            </div>
+            <div class="empty-text">
+              <strong>「이미지 만들기」</strong>를 누르면<br/>
+              결과가 여기에 표시됩니다
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-right-footer">
+      <button class="version-trigger" id="versionTrigger" type="button" aria-label="버전 정보 보기" aria-haspopup="dialog" aria-expanded="false">
+        <span id="versionLabel">v1.0.1</span>
+      </button>
+      <div class="version-popover" id="versionPopover" role="dialog" aria-label="변경 이력" hidden>
+        <div class="version-popover-head">
+          <h3>변경 이력</h3>
+          <button class="version-popover-close" id="versionPopoverClose" type="button" aria-label="닫기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="version-popover-body" id="versionPopoverBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-frame" id="lightboxFrame">
+    <div class="lightbox-card" id="lightboxCard">
+      <img id="lightboxImg" alt="" />
+    </div>
+    <button class="lightbox-close" type="button" id="lightboxClose" aria-label="닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script src="src/image-utils.js"></script>
+<script src="src/renderer.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
