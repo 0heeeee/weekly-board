@@ -541,7 +541,21 @@ html, body {
   border: none;
   border-radius: var(--radius);
   overflow: hidden;
+  transition: box-shadow .15s, background-color .15s;
 }
+.section.drag {
+  background: var(--panel-2);
+  box-shadow: 0 0 0 2px var(--accent-soft) inset;
+}
+.section.drag .dropzone {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.section.drag .dropzone .dz-icon {
+  color: var(--accent);
+  transform: scale(1.1);
+}
+.section.drag .dropzone .dz-main { color: var(--accent); }
 .section-head {
   display: flex;
   align-items: center;

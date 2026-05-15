@@ -36,6 +36,11 @@
   // Changelog (newest first)
   // ============================================================
   const CHANGELOG = [
+    { date: '26.05.15', version: '1.0.2', items: [
+      '이미지 제작 가이드 업데이트',
+      '이미지 드롭 영역을 점선 박스 → 번호 카드 전체로 확장',
+      '마지막 1개 남은 업무는 휴지통을 눌러도 카드는 유지하고 이미지·제목만 초기화',
+    ]},
     { date: '26.05.14', version: '1.0.1', items: [
       '화면 캡쳐 + Cmd+V / Ctrl+V 시 썸네일 자동 추가 기능',
       'KST 기준 매주 월요일 14:00을 주차 경계로 자동 갱신',
@@ -277,6 +282,17 @@
     head.querySelector('[data-act="up"]').addEventListener('click', () => moveSection(s.id, -1));
     head.querySelector('[data-act="down"]').addEventListener('click', () => moveSection(s.id, +1));
     head.querySelector('[data-act="remove-section"]').addEventListener('click', () => {
+      // 마지막 남은 섹션이면 삭제 대신 초기화(이미지·제목 비우기) — 항상 1개는 유지
+      if (sections.length === 1 && sections[0].id === s.id) {
+        const dirty = s.images.length > 0 || (s.title && s.title.trim());
+        if (!dirty) return;
+        if (confirm('이미지와 업무명을 비울까요?')) {
+          s.images = [];
+          s.title = '';
+          render();
+        }
+        return;
+      }
       if (confirm('이 섹션을 삭제할까요?')) removeSection(s.id);
     });
     el.appendChild(head);
@@ -297,20 +313,33 @@
       addFilesToSection(s.id, e.target.files);
       e.target.value = '';
     });
-    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => {
-      e.preventDefault(); e.stopPropagation();
-      dz.classList.add('drag');
-    }));
-    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => {
-      e.preventDefault(); e.stopPropagation();
-      if (ev === 'dragleave' && dz.contains(e.relatedTarget)) return;
-      dz.classList.remove('drag');
-    }));
-    dz.addEventListener('drop', e => {
-      const files = e.dataTransfer?.files;
-      if (files && files.length) addFilesToSection(s.id, files);
-    });
     body.appendChild(dz);
+
+    // 카드 전체를 파일 드롭존으로 사용. 내부 썸네일 재정렬 드래그(dragSrc)와는 분리.
+    const hasFiles = (e) => {
+      const types = e.dataTransfer && e.dataTransfer.types;
+      if (!types) return false;
+      for (let i = 0; i < types.length; i++) if (types[i] === 'Files') return true;
+      return false;
+    };
+    ['dragenter', 'dragover'].forEach(ev => el.addEventListener(ev, e => {
+      if (dragSrc) return;
+      if (!hasFiles(e)) return;
+      e.preventDefault(); e.stopPropagation();
+      el.classList.add('drag');
+    }));
+    ['dragleave', 'drop'].forEach(ev => el.addEventListener(ev, e => {
+      if (dragSrc) return;
+      if (ev === 'dragleave' && el.contains(e.relatedTarget)) return;
+      el.classList.remove('drag');
+    }));
+    el.addEventListener('drop', e => {
+      if (dragSrc) return;
+      const files = e.dataTransfer?.files;
+      if (!files || !files.length) return;
+      e.preventDefault(); e.stopPropagation();
+      addFilesToSection(s.id, files);
+    });
 
     const thumbs = document.createElement('div');
     thumbs.className = 'thumbs';

@@ -28,6 +28,7 @@
     "darkDetection": {
       "luminanceThreshold": 30,
       "edgeRatioThreshold": 0.7,
+      "oppositeEdgeRatioThreshold": 0.85,
       "sampleStripPx": 4
     }
   },

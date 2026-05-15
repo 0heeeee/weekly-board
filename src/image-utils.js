@@ -135,6 +135,7 @@ window.WRB.imageUtils = (() => {
   function detectDarkBackground(sourceCanvas, opts) {
     const luminanceThreshold = opts?.luminanceThreshold ?? 30;
     const edgeRatioThreshold = opts?.edgeRatioThreshold ?? 0.7;
+    const oppositeEdgeRatioThreshold = opts?.oppositeEdgeRatioThreshold ?? 0.85;
     const stripPx = opts?.sampleStripPx ?? 4;
     const sw = sourceCanvas.width;
     const sh = sourceCanvas.height;
@@ -151,26 +152,41 @@ window.WRB.imageUtils = (() => {
     ctx.drawImage(sourceCanvas, 0, 0, w, h);
 
     const strip = Math.max(2, Math.min(stripPx, Math.floor(Math.min(w, h) / 6)));
-    let darkCount = 0, totalCount = 0;
     const scanBand = (x, y, bw, bh) => {
-      if (bw <= 0 || bh <= 0) return;
+      if (bw <= 0 || bh <= 0) return { dark: 0, total: 0 };
       const data = ctx.getImageData(x, y, bw, bh).data;
+      let dark = 0, total = 0;
       for (let i = 0; i < data.length; i += 4) {
         const a = data[i + 3];
         if (a < 128) continue;
         const r = data[i], g = data[i + 1], b = data[i + 2];
         const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        if (lum < luminanceThreshold) darkCount++;
-        totalCount++;
+        if (lum < luminanceThreshold) dark++;
+        total++;
       }
+      return { dark, total };
     };
-    scanBand(0, 0, w, strip);
-    scanBand(0, h - strip, w, strip);
-    scanBand(0, strip, strip, h - 2 * strip);
-    scanBand(w - strip, strip, strip, h - 2 * strip);
 
+    const top = scanBand(0, 0, w, strip);
+    const bottom = scanBand(0, h - strip, w, strip);
+    const left = scanBand(0, strip, strip, h - 2 * strip);
+    const right = scanBand(w - strip, strip, strip, h - 2 * strip);
+
+    const totalCount = top.total + bottom.total + left.total + right.total;
     if (totalCount === 0) return false;
-    return (darkCount / totalCount) > edgeRatioThreshold;
+
+    // (1) 전면 다크 가장자리
+    const overallRatio = (top.dark + bottom.dark + left.dark + right.dark) / totalCount;
+    if (overallRatio > edgeRatioThreshold) return true;
+
+    // (2) 레터박스(top+bottom) / 필러박스(left+right) — 마주보는 한 쌍이 모두 짙은 경우
+    const ratio = (b) => (b.total > 0 ? b.dark / b.total : 0);
+    const topR = ratio(top), botR = ratio(bottom);
+    const leftR = ratio(left), rightR = ratio(right);
+    if (topR > oppositeEdgeRatioThreshold && botR > oppositeEdgeRatioThreshold) return true;
+    if (leftR > oppositeEdgeRatioThreshold && rightR > oppositeEdgeRatioThreshold) return true;
+
+    return false;
   }
 
   function detectDarkOnStatic(img, w, h) {
