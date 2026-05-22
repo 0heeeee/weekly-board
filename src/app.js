@@ -36,6 +36,9 @@
   // Changelog (newest first)
   // ============================================================
   const CHANGELOG = [
+    { date: '26.05.22', version: '1.0.3', items: [
+      '결과 카드(PNG/GIF)에 「w900 Fill 채우기」 토글 추가 — 이미지를 콘텐츠 가로폭(900px)까지 비율 유지하며 확대, 다운로드 결과물에도 반영',
+    ]},
     { date: '26.05.15', version: '1.0.2', items: [
       '이미지 제작 가이드 업데이트',
       '이미지 드롭 영역을 점선 박스 → 번호 카드 전체로 확장',
@@ -552,6 +555,19 @@
     card.className = 'result-card';
     const filename = buildFilename(r);
     const numberLabel = r.index != null ? pad2(r.index + 1) : '';
+
+    // Capture original (= as-generated) snapshot so the toggle can revert.
+    // Only initialize once — re-renders must keep the same originals.
+    if (r.fillActive == null) r.fillActive = false;
+    if (!r.originalSnapshot) {
+      r.originalSnapshot = snapshotResult(r);
+    }
+
+    const fillBtnHTML = `
+      <button class="btn fill-toggle${r.fillActive ? ' on' : ''}" data-act="toggle-fill" type="button" aria-pressed="${r.fillActive ? 'true' : 'false'}">
+        w900 Fill 채우기
+      </button>`;
+
     card.innerHTML = `
       <div class="result-card-head">
         ${numberLabel ? `<div class="result-number">${numberLabel}</div>` : ''}
@@ -565,10 +581,13 @@
             ${r.kind === 'gif' ? `<span>·</span><span>${r.frameCount}f · ${r.fps}fps</span>` : ''}
           </div>
         </div>
-        <button class="btn" data-act="download">
-          ${ICON.download}
-          ${r.kind === 'gif' ? 'GIF' : 'PNG'} 다운로드
-        </button>
+        <div class="result-actions">
+          ${fillBtnHTML}
+          <button class="btn" data-act="download">
+            ${ICON.download}
+            ${r.kind === 'gif' ? 'GIF' : 'PNG'} 다운로드
+          </button>
+        </div>
       </div>
       <div class="result-preview-area" title="클릭하여 크게 보기">
         <img src="${r.previewUrl}" alt="" />
@@ -576,7 +595,110 @@
     `;
     card.querySelector('.result-preview-area').addEventListener('click', () => openLightbox(r.previewUrl));
     card.querySelector('[data-act="download"]').addEventListener('click', () => downloadOne(r));
+    const fillBtn = card.querySelector('[data-act="toggle-fill"]');
+    if (fillBtn) fillBtn.addEventListener('click', () => toggleFill(r, card));
     return card;
+  }
+
+  // Capture mutable fields that the fill toggle swaps in/out.
+  function snapshotResult(r) {
+    return {
+      blob: r.blob,
+      previewUrl: r.previewUrl,
+      width: r.width,
+      height: r.height,
+      frameCount: r.frameCount,
+      fps: r.fps,
+    };
+  }
+  function applySnapshot(r, snap) {
+    r.blob = snap.blob;
+    r.previewUrl = snap.previewUrl;
+    r.width = snap.width;
+    r.height = snap.height;
+    if (snap.frameCount !== undefined) r.frameCount = snap.frameCount;
+    if (snap.fps !== undefined) r.fps = snap.fps;
+  }
+
+  function refreshResultMetaUI(r, cardEl) {
+    const img = cardEl.querySelector('.result-preview-area img');
+    if (img) img.src = r.previewUrl;
+    const meta = cardEl.querySelector('.result-meta');
+    if (meta) {
+      meta.innerHTML = `
+        <span class="kind-tag ${r.kind}">${r.kind.toUpperCase()}</span>
+        <span>${r.width} × ${r.height}px</span>
+        <span>·</span>
+        <span>${formatSize(r.blob.size)}</span>
+        ${r.kind === 'gif' ? `<span>·</span><span>${r.frameCount}f · ${r.fps}fps</span>` : ''}
+      `;
+    }
+    const fillBtn = cardEl.querySelector('[data-act="toggle-fill"]');
+    if (fillBtn) {
+      fillBtn.classList.toggle('on', !!r.fillActive);
+      fillBtn.setAttribute('aria-pressed', r.fillActive ? 'true' : 'false');
+    }
+  }
+
+  async function toggleFill(r, cardEl) {
+    const fillBtn = cardEl.querySelector('[data-act="toggle-fill"]');
+    if (!fillBtn || fillBtn.disabled) return;
+
+    if (r.fillActive) {
+      // OFF — revert to the as-generated version
+      applySnapshot(r, r.originalSnapshot);
+      r.fillActive = false;
+      refreshResultMetaUI(r, cardEl);
+      return;
+    }
+
+    // ON — build the fill version once and cache it
+    if (!r.fillSnapshot) {
+      const section = sections.find(s => s.id === r.sectionId);
+      if (!section) {
+        setStatus('원본 섹션을 찾을 수 없어요. 다시 「이미지 만들기」를 눌러주세요.', 'error');
+        return;
+      }
+      const restoreLabel = fillBtn.textContent;
+      fillBtn.disabled = true;
+      fillBtn.textContent = '생성 중…';
+      try {
+        let filled;
+        if (r.kind === 'gif') {
+          setProgress(0);
+          filled = await renderer.generateSectionGifFill(
+            section, r.title, r.slug,
+            p => setProgress(p),
+            setStatus
+          );
+          setProgress(1);
+          setTimeout(() => setProgress(null), 2000);
+        } else {
+          filled = await renderer.generateSectionPngFill(section, r.title, r.slug, setStatus);
+        }
+        r.fillSnapshot = {
+          blob: filled.blob,
+          previewUrl: filled.previewUrl,
+          width: filled.width,
+          height: filled.height,
+          frameCount: filled.frameCount,
+          fps: filled.fps,
+        };
+        setStatus('완료 · w900 Fill 적용');
+      } catch (err) {
+        console.error('w900 Fill 생성 실패:', err);
+        setStatus('w900 Fill 생성 실패: ' + err.message, 'error');
+        setProgress(null);
+        return;
+      } finally {
+        fillBtn.disabled = false;
+        fillBtn.textContent = restoreLabel;
+      }
+    }
+
+    applySnapshot(r, r.fillSnapshot);
+    r.fillActive = true;
+    refreshResultMetaUI(r, cardEl);
   }
 
   // ============================================================

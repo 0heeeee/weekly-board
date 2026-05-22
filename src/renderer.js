@@ -189,6 +189,81 @@ window.WRB.renderer = (() => {
     return Math.max(padding * 2 + innerPad * 2 + measure.contentH, padding * 2 + 10);
   }
 
+  // ============================================================
+  // w900 Fill mode — single row, equal-height, fill available width.
+  // Upscales beyond natural size (intentional per spec).
+  // Used by the "w900 Fill 채우기" per-card toggle. Does NOT affect
+  // the default generation pipeline.
+  // ============================================================
+  function layoutImagesFillW900(images, availableWidth) {
+    const { imageGap } = cfg().spacing;
+    const items = images.filter(im => !im.loading).map(im => ({
+      src: im,
+      naturalW: im.w,
+      naturalH: im.h,
+      aspect: im.w / im.h,
+    }));
+    if (items.length === 0) return { rows: [], totalHeight: 0 };
+
+    const n = items.length;
+    const gaps = imageGap * (n - 1);
+    const targetSum = Math.max(1, availableWidth - gaps);
+    const sumAspect = items.reduce((s, it) => s + it.aspect, 0) || 1;
+    const H = targetSum / sumAspect;
+    let x = 0;
+    items.forEach((it, i) => {
+      it.w = Math.round(H * it.aspect);
+      it.h = Math.round(H);
+      it.x = i === 0 ? 0 : x;
+      x = it.x + it.w + imageGap;
+    });
+    // Snap last item to exactly fill availableWidth (rounding reconciliation)
+    const last = items[items.length - 1];
+    const targetRight = availableWidth;
+    if (last.x + last.w !== targetRight) {
+      last.w = Math.max(1, targetRight - last.x);
+    }
+    const rowH = Math.round(H);
+    return { rows: [{ items, width: availableWidth, height: rowH }], totalHeight: rowH };
+  }
+
+  function measureSectionFill(section) {
+    const wrapped = sectionNeedsGrayWrap(section);
+    const wrapPad = wrapped ? (cfg().flowBoard.padding || 0) : 0;
+    const availW = innerWidth() - wrapPad * 2;
+    const { totalHeight: contentH, rows } = layoutImagesFillW900(section.images, availW);
+    return { titleH: 0, contentH, rows, wrapped, wrapPad };
+  }
+
+  async function generateSectionPngFill(section, title, slug, setStatus) {
+    setStatus?.(`PNG 생성 중 (w900 Fill) · ${title || slug}...`);
+    const c = cfg().canvas;
+    const measure = measureSectionFill(section);
+    const totalH = sectionTotalHeight(measure);
+    const canvas = document.createElement('canvas');
+    canvas.width = c.width;
+    canvas.height = totalH;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    drawSingleSection(ctx, section, totalH, measure, 0);
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const previewUrl = URL.createObjectURL(blob);
+    return {
+      kind: 'png', blob, previewUrl,
+      width: c.width, height: totalH,
+      title, slug, sectionId: section.id,
+    };
+  }
+
+  // Thin wrapper around generateSectionGif using the fill-mode measure.
+  // Reuses the entire existing GIF encoding pipeline — no rule changes.
+  async function generateSectionGifFill(section, title, slug, onProgress, setStatus) {
+    const measure = measureSectionFill(section);
+    const totalH = sectionTotalHeight(measure);
+    return await generateSectionGif(section, measure, totalH, title, slug, onProgress, setStatus);
+  }
+
   async function generateSectionPng(section, measure, totalH, title, slug, setStatus) {
     setStatus?.(`PNG 생성 중 · ${title || slug}...`);
     const c = cfg().canvas;
@@ -266,11 +341,15 @@ window.WRB.renderer = (() => {
 
   return {
     layoutImages,
+    layoutImagesFillW900,
     measureSection,
+    measureSectionFill,
     drawSingleSection,
     sectionHasGif,
     sectionTotalHeight,
     generateSectionPng,
+    generateSectionPngFill,
     generateSectionGif,
+    generateSectionGifFill,
   };
 })();

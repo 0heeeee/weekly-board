@@ -854,6 +854,35 @@ html, body {
   gap: 12px;
   border-bottom: 1px solid var(--border);
 }
+.result-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.btn.fill-toggle {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.btn.fill-toggle:hover {
+  background: var(--panel-2);
+  border-color: var(--border-focus);
+}
+.btn.fill-toggle:active { transform: translateY(1px); }
+.btn.fill-toggle.on {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #0a0a0c;
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(0,0,0,.06) inset, 0 4px 14px rgba(255,255,255,.05);
+}
+.btn.fill-toggle.on:hover {
+  background: #ececf1;
+  border-color: #ececf1;
+}
+.btn.fill-toggle:disabled { opacity: .55; cursor: progress; }
+.btn.fill-toggle:disabled:hover { background: transparent; border-color: var(--border-strong); }
 .result-info { min-width: 0; flex: 1; }
 .result-title {
   font-size: 13px;
