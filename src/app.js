@@ -802,6 +802,191 @@
   }
 
   // ============================================================
+  // Alert modal — reusable A/B/C type popup
+  //
+  // Usage (from anywhere, including the dev console):
+  //   alertModal.show({
+  //     type: 'A' | 'B' | 'C',         // default 'A'
+  //     title: '제목',                  // optional
+  //     body: '본문 텍스트',            // text (auto-escaped)
+  //     bodyHTML: '<p>HTML 본문</p>',   // alternative to body (trusted HTML)
+  //     closable: true,                 // X button (default: true for A/C, false for B)
+  //     closeOnBackdrop: false,         // dimmed click → close (default false)
+  //     closeOnEsc: true,               // Esc → close (default true)
+  //     primaryCta: { label: '확인', onClick: () => {}, variant: 'primary' },
+  //     secondaryCta: { label: '취소', onClick: () => {} },
+  //     actionsAlign: 'end'|'center'|'stretch',
+  //     imageSrc: 'data:...' | '...png',  // Type C
+  //     imageAlt: '',
+  //     onClose: () => {},
+  //   });
+  //   alertModal.hide();
+  //
+  // Type defaults (overridable via options):
+  //   A — closable=true, no actions, no image
+  //   B — closable=false, primaryCta required (secondaryCta optional)
+  //   C — closable=true, imageSrc shown above title/body
+  //
+  // CTA onClick returning `false` keeps the modal open; anything else closes.
+  // ============================================================
+  const alertModal = (() => {
+    const $ = (id) => document.getElementById(id);
+    const refs = () => ({
+      root: $('alertModal'),
+      card: $('alertModalCard'),
+      title: $('alertModalTitle'),
+      body: $('alertModalBody'),
+      close: $('alertModalClose'),
+      actions: $('alertModalActions'),
+      imageWrap: $('alertModalImage'),
+      image: $('alertModalImg'),
+      backdrop: $('alertModalBackdrop'),
+    });
+
+    let active = null;
+    let lastFocus = null;
+
+    function setHidden(node, hidden) {
+      if (!node) return;
+      if (hidden) node.setAttribute('hidden', '');
+      else node.removeAttribute('hidden');
+    }
+
+    function clearContent() {
+      const r = refs();
+      r.title.textContent = '';
+      r.body.innerHTML = '';
+      r.actions.innerHTML = '';
+      r.actions.removeAttribute('data-align');
+      r.image.src = '';
+      r.image.alt = '';
+      setHidden(r.title, true);
+      setHidden(r.body, true);
+      setHidden(r.actions, true);
+      setHidden(r.imageWrap, true);
+      setHidden(r.close, true);
+      r.card.removeAttribute('data-type');
+    }
+
+    function makeButton(spec, defaultVariant) {
+      const { label = '확인', onClick, variant } = spec || {};
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const cls = ['btn'];
+      const v = variant !== undefined ? variant : defaultVariant;
+      if (v) cls.push(v);
+      btn.className = cls.join(' ');
+      btn.textContent = label;
+      btn.addEventListener('click', async () => {
+        let shouldClose = true;
+        if (typeof onClick === 'function') {
+          try {
+            const ret = await onClick();
+            if (ret === false) shouldClose = false;
+          } catch (err) {
+            console.error('alertModal action error:', err);
+          }
+        }
+        if (shouldClose) hide();
+      });
+      return btn;
+    }
+
+    function show(opts) {
+      const options = opts || {};
+      const r = refs();
+      if (!r.root) { console.warn('alertModal: DOM not found'); return; }
+      if (active) hide();
+      clearContent();
+
+      const type = options.type || 'A';
+      r.card.setAttribute('data-type', type);
+
+      // Title
+      if (options.title) {
+        r.title.textContent = options.title;
+        setHidden(r.title, false);
+      }
+      // Body — bodyHTML takes precedence (trusted), else body (escaped)
+      if (options.bodyHTML !== undefined && options.bodyHTML !== null) {
+        r.body.innerHTML = options.bodyHTML;
+        setHidden(r.body, false);
+      } else if (options.body !== undefined && options.body !== null && options.body !== '') {
+        r.body.textContent = options.body;
+        setHidden(r.body, false);
+      }
+      // Image
+      if (options.imageSrc) {
+        r.image.src = options.imageSrc;
+        r.image.alt = options.imageAlt || '';
+        setHidden(r.imageWrap, false);
+      }
+      // Actions (primary / secondary CTAs)
+      const actionEls = [];
+      if (options.secondaryCta) actionEls.push(makeButton(options.secondaryCta));
+      if (options.primaryCta) actionEls.push(makeButton(options.primaryCta, 'primary'));
+      if (actionEls.length) {
+        actionEls.forEach(b => r.actions.appendChild(b));
+        if (options.actionsAlign) r.actions.setAttribute('data-align', options.actionsAlign);
+        setHidden(r.actions, false);
+      }
+      // Close button: default true for A/C, false for B; explicit `closable` overrides
+      const defaultClosable = type !== 'B';
+      const showClose = options.closable !== undefined ? !!options.closable : defaultClosable;
+      if (showClose) setHidden(r.close, false);
+
+      lastFocus = document.activeElement;
+      active = {
+        onClose: options.onClose,
+        closeOnEsc: options.closeOnEsc !== false,
+        closeOnBackdrop: !!options.closeOnBackdrop,
+      };
+      setHidden(r.root, false);
+      // Move focus into the modal so keyboard users land inside it
+      setTimeout(() => {
+        const target = r.card.querySelector('.btn.primary, .btn, .alert-modal-close:not([hidden])');
+        if (target) { try { target.focus(); } catch (_) {} }
+      }, 0);
+    }
+
+    function hide() {
+      if (!active) return;
+      const r = refs();
+      const cb = active.onClose;
+      active = null;
+      setHidden(r.root, true);
+      if (lastFocus && typeof lastFocus.focus === 'function') {
+        try { lastFocus.focus(); } catch (_) {}
+      }
+      lastFocus = null;
+      if (typeof cb === 'function') {
+        try { cb(); } catch (err) { console.error(err); }
+      }
+    }
+
+    function isOpen() { return !!active; }
+
+    function setup() {
+      const r = refs();
+      if (!r.root) return;
+      r.close.addEventListener('click', hide);
+      r.backdrop.addEventListener('click', () => {
+        if (active && active.closeOnBackdrop) hide();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (!active) return;
+        if (e.key === 'Escape' && active.closeOnEsc) hide();
+      });
+    }
+
+    return { show, hide, isOpen, setup };
+  })();
+
+  // Expose on window so it can be triggered from anywhere (console, future features).
+  window.alertModal = alertModal;
+  WRB.alert = alertModal;
+
+  // ============================================================
   // Bootstrap
   // ============================================================
   async function boot() {
@@ -832,6 +1017,9 @@
 
     // Changelog popover
     setupChangelogPopover();
+
+    // Reusable alert modal (window.alertModal / WRB.alert)
+    alertModal.setup();
 
     // Paste image from clipboard (Mac: Cmd+V / Windows: Ctrl+V)
     document.addEventListener('paste', (e) => {

@@ -190,8 +190,12 @@ window.WRB.renderer = (() => {
   }
 
   // ============================================================
-  // w900 Fill mode — single row, equal-height, fill available width.
-  // Upscales beyond natural size (intentional per spec).
+  // w900 Fill mode — single row, equal-WIDTH (1/N), per-image natural height.
+  // Each image gets width = (availableWidth - gaps) / N. Height follows the
+  // image's own aspect ratio (not unified across images). Row container's
+  // height = max(item.h) so the canvas fits the tallest image; shorter
+  // images sit top-aligned (drawSectionContent renders from row top).
+  // Upscales beyond natural size when needed (intentional per spec).
   // Used by the "w900 Fill 채우기" per-card toggle. Does NOT affect
   // the default generation pipeline.
   // ============================================================
@@ -208,22 +212,19 @@ window.WRB.renderer = (() => {
     const n = items.length;
     const gaps = imageGap * (n - 1);
     const targetSum = Math.max(1, availableWidth - gaps);
-    const sumAspect = items.reduce((s, it) => s + it.aspect, 0) || 1;
-    const H = targetSum / sumAspect;
-    let x = 0;
+    const W = targetSum / n;
     items.forEach((it, i) => {
-      it.w = Math.round(H * it.aspect);
-      it.h = Math.round(H);
-      it.x = i === 0 ? 0 : x;
-      x = it.x + it.w + imageGap;
+      it.w = Math.round(W);
+      it.h = Math.round(W / it.aspect);
+      it.x = i === 0 ? 0 : (items[i - 1].x + items[i - 1].w + imageGap);
     });
-    // Snap last item to exactly fill availableWidth (rounding reconciliation)
+    // Snap last item width to exactly fill availableWidth (rounding reconciliation).
+    // Height stays as computed (preserves per-image aspect; sub-pixel width drift only).
     const last = items[items.length - 1];
-    const targetRight = availableWidth;
-    if (last.x + last.w !== targetRight) {
-      last.w = Math.max(1, targetRight - last.x);
+    if (last.x + last.w !== availableWidth) {
+      last.w = Math.max(1, availableWidth - last.x);
     }
-    const rowH = Math.round(H);
+    const rowH = items.reduce((m, it) => Math.max(m, it.h), 0);
     return { rows: [{ items, width: availableWidth, height: rowH }], totalHeight: rowH };
   }
 

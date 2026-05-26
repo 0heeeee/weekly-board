@@ -136,6 +136,29 @@
   </div>
 </div>
 
+<!-- ============================================================
+  Reusable alert modal — 3 types (A: notice, B: choice, C: image).
+  Trigger from console or anywhere: window.alertModal.show({ type, ... }).
+  See the alertModal IIFE in src/app.js for full options.
+============================================================ -->
+<div class="alert-modal" id="alertModal" hidden role="dialog" aria-modal="true" aria-labelledby="alertModalTitle">
+  <div class="alert-modal-backdrop" id="alertModalBackdrop"></div>
+  <div class="alert-modal-card" id="alertModalCard">
+    <button class="alert-modal-close" id="alertModalClose" type="button" aria-label="닫기" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+    <div class="alert-modal-image" id="alertModalImage" hidden>
+      <img id="alertModalImg" alt="" />
+    </div>
+    <h2 class="alert-modal-title" id="alertModalTitle" hidden></h2>
+    <div class="alert-modal-body" id="alertModalBody" hidden></div>
+    <div class="alert-modal-actions" id="alertModalActions" hidden></div>
+  </div>
+</div>
+
 <script src="src/image-utils.js"></script>
 <script src="src/renderer.js"></script>
 <script src="src/app.js"></script>
