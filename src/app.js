@@ -36,6 +36,9 @@
   // Changelog (newest first)
   // ============================================================
   const CHANGELOG = [
+    { date: '26.05.29', version: '1.0.4', items: [
+      '현재 주차와 업로드 기간 안내 기능 추가',
+    ]},
     { date: '26.05.22', version: '1.0.3', items: [
       '결과 카드(PNG/GIF)에 「w900 Fill 채우기」 토글 추가 — 이미지를 콘텐츠 가로폭(900px)까지 비율 유지하며 확대, 다운로드 결과물에도 반영',
     ]},
@@ -108,6 +111,60 @@
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
     return { year: d.getUTCFullYear(), week: weekNo };
+  }
+
+  // ============================================================
+  // Upload-period notice — reuses the Monday 14:00 KST boundary
+  // (same -5h shift as getCurrentWeek): window is [this Mon 14:00, next Mon 14:00).
+  // ============================================================
+  const NOTICE_DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  function getUploadWindow() {
+    const shifted = new Date(Date.now() - 5 * 3600 * 1000);
+    const y = shifted.getUTCFullYear();
+    const m = shifted.getUTCMonth();
+    const day = shifted.getUTCDate();
+    const daysSinceMonday = (new Date(Date.UTC(y, m, day)).getUTCDay() + 6) % 7;
+    return {
+      start: new Date(Date.UTC(y, m, day - daysSinceMonday)),
+      end: new Date(Date.UTC(y, m, day - daysSinceMonday + 7)),
+    };
+  }
+  function formatNoticeDate(d) {
+    return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일(${NOTICE_DOW[d.getUTCDay()]})`;
+  }
+  function setupUploadNotice() {
+    const notice = document.getElementById('uploadNotice');
+    if (!notice) return;
+    const { week } = getCurrentWeek();
+    const { start, end } = getUploadWindow();
+    const weekEl = document.getElementById('noticeWeek');
+    const periodEl = document.getElementById('noticePeriod');
+    if (weekEl) weekEl.textContent = String(week);
+    if (periodEl) {
+      periodEl.textContent =
+        `${formatNoticeDate(start)} 14:01 ~ ${formatNoticeDate(end)} 14:00까지 업로드해 주세요 🤓!`;
+    }
+    const recall = document.getElementById('uploadNoticeRecall');
+    let autoTimer = null;
+    function dismissNotice() {
+      if (notice.hidden) return;
+      if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+      notice.classList.add('is-leaving');
+      setTimeout(() => {
+        notice.hidden = true;
+        notice.classList.remove('is-leaving');
+      }, 400);
+    }
+    function showNotice() {
+      notice.classList.remove('is-leaving');
+      notice.hidden = false;
+      if (autoTimer) clearTimeout(autoTimer);
+      autoTimer = setTimeout(dismissNotice, 5000); // re-arm fade-out
+    }
+    const closeBtn = document.getElementById('uploadNoticeClose');
+    if (closeBtn) closeBtn.addEventListener('click', dismissNotice);
+    if (recall) recall.addEventListener('click', showNotice);
+    autoTimer = setTimeout(dismissNotice, 5000); // auto fade-out after 5s
   }
 
   function setupMetaCombo(field, options, currentValue) {
@@ -531,8 +588,8 @@
         </svg>
       </div>
       <div class="empty-text">
-        <strong>「이미지 만들기」</strong>를 누르면<br/>
-        결과가 여기에 표시됩니다
+        이미지 업로드 후, <strong>「이미지 만들기」</strong>를 누르면,<br/>
+        결과는 여기에 표시됩니다.
       </div>
     </div>
   `;
@@ -1004,6 +1061,7 @@
 
     const iso = getCurrentWeek();
     setupMetaCombos(iso);
+    setupUploadNotice();
 
     document.getElementById('addSection').addEventListener('click', () => addSection());
     document.getElementById('generateBtn').addEventListener('click', () => {

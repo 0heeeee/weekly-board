@@ -73,8 +73,8 @@ html, body {
   width: 100%;
   font-size: 14px;
   font-weight: 600;
-  background: #D9FA6E;
-  border: 1px solid #D9FA6E;
+  background: #CEFF30;
+  border: 1px solid #CEFF30;
   color: #0a0a0c;
   border-radius: 999px;
   cursor: pointer;
@@ -86,8 +86,8 @@ html, body {
   transition: background .15s, border-color .15s, transform .08s;
 }
 .fab-generate:hover {
-  background: #E3FB85;
-  border-color: #E3FB85;
+  background: #D9FF5C;
+  border-color: #D9FF5C;
 }
 .fab-generate:active { transform: translateY(1px); }
 .fab-generate:disabled,
@@ -113,6 +113,10 @@ html, body {
 .col-right .col-header {
   justify-content: flex-end;
   gap: 16px;
+  /* Positioned so the notice bubble can overlay the always-present recall button. */
+  position: relative;
+  /* Fixed height so toggling the notice bubble never shifts the content below. */
+  height: var(--header-h);
   /* Reserve scrollbar-width on the right so this row's right edge aligns
      with the result card right edge (which sits inside results-list's
      scrollbar-gutter reservation). */
@@ -125,6 +129,92 @@ html, body {
   color: var(--text-mid);
   letter-spacing: -0.005em;
 }
+
+/* ====== Upload-period notice bubble (replaces the right-header title) ====== */
+.notice-bubble {
+  position: absolute;
+  left: 7.5px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 480px;
+  padding: 18px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: opacity .35s ease;
+}
+.notice-bubble[hidden] { display: none; }
+.notice-bubble.is-leaving { opacity: 0; pointer-events: none; }
+.notice-bubble-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.notice-bubble-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.notice-bubble-title .notice-week {
+  color: #CEFF30;
+  font-weight: 700;
+}
+.notice-bubble-period {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-mid);
+  letter-spacing: -0.005em;
+}
+.notice-bubble-close {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: -2px -2px 0 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.notice-bubble-close:hover { background: var(--panel-3); color: var(--text); }
+.notice-bubble-close svg { width: 13px; height: 13px; }
+
+/* Persistent recall button shown after the notice fades — click to bring it back */
+.notice-recall {
+  margin: 0 auto 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.notice-recall:hover {
+  background: var(--panel-2);
+  color: var(--text-mid);
+  border-color: var(--border-strong);
+}
+.notice-recall[hidden] { display: none; }
 .brand { display: flex; flex-direction: column; gap: 4px; }
 .brand h1 {
   margin: 0;
@@ -137,6 +227,15 @@ html, body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+}
+.brand-logo {
+  display: flex;
+  align-items: center;
+}
+.brand-logo-svg {
+  height: 53px;
+  width: auto;
+  display: block;
 }
 .brand .sub {
   color: var(--text-dim);
