@@ -9,7 +9,7 @@
   // local file fetches). Keep these in sync with config/board-rules.json.
   // ============================================================
   const FALLBACK_CONFIG = {
-    canvas: { width: 950, background: '#000000', padding: 25 },
+    canvas: { width: 950, background: '#000000', padding: 25, renderScale: 2 },
     spacing: { imageGap: 20, sectionGap: 50 },
     image: {
       maxWidth: 300,

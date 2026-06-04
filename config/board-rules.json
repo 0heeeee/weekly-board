@@ -2,7 +2,8 @@
   "canvas": {
     "width": 950,
     "background": "#000000",
-    "padding": 25
+    "padding": 25,
+    "renderScale": 2
   },
   "spacing": {
     "imageGap": 20,

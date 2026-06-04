@@ -239,12 +239,15 @@ window.WRB.renderer = (() => {
   async function generateSectionPngFill(section, title, slug, setStatus) {
     setStatus?.(`PNG 생성 중 (w900 Fill) · ${title || slug}...`);
     const c = cfg().canvas;
+    const scale = c.renderScale || 1;
     const measure = measureSectionFill(section);
     const totalH = sectionTotalHeight(measure);
     const canvas = document.createElement('canvas');
-    canvas.width = c.width;
-    canvas.height = totalH;
+    // Supersample: physical pixels = logical size × renderScale (crisper output).
+    canvas.width = c.width * scale;
+    canvas.height = totalH * scale;
     const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     drawSingleSection(ctx, section, totalH, measure, 0);
@@ -268,10 +271,13 @@ window.WRB.renderer = (() => {
   async function generateSectionPng(section, measure, totalH, title, slug, setStatus) {
     setStatus?.(`PNG 생성 중 · ${title || slug}...`);
     const c = cfg().canvas;
+    const scale = c.renderScale || 1;
     const canvas = document.createElement('canvas');
-    canvas.width = c.width;
-    canvas.height = totalH;
+    // Supersample: physical pixels = logical size × renderScale (crisper output).
+    canvas.width = c.width * scale;
+    canvas.height = totalH * scale;
     const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     drawSingleSection(ctx, section, totalH, measure, 0);
