@@ -3,7 +3,7 @@
     "width": 950,
     "background": "#000000",
     "padding": 25,
-    "renderScale": 2
+    "renderScale": 1
   },
   "spacing": {
     "imageGap": 20,

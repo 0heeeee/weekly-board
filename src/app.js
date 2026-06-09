@@ -9,7 +9,7 @@
   // local file fetches). Keep these in sync with config/board-rules.json.
   // ============================================================
   const FALLBACK_CONFIG = {
-    canvas: { width: 950, background: '#000000', padding: 25, renderScale: 2 },
+    canvas: { width: 950, background: '#000000', padding: 25, renderScale: 1 },
     spacing: { imageGap: 20, sectionGap: 50 },
     image: {
       maxWidth: 300,
@@ -36,6 +36,9 @@
   // Changelog (newest first)
   // ============================================================
   const CHANGELOG = [
+    { date: '26.06.09', version: '1.0.6', items: [
+      '출력 이미지 가로폭 950px로 고정 — PNG/GIF 실제 파일 가로폭이 정확히 950px로 출력',
+    ]},
     { date: '26.06.04', version: '1.0.5', items: [
       '결과 이미지(PNG) 화질 개선 — 2배 해상도로 출력하여 더 선명하게',
     ]},
